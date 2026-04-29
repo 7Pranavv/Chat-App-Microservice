@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+
+      routes:
+        - id: room-service
+          uri: http://room-service:8081
+          predicates:
+            - Path=/api/v1/rooms/**
+
+        - id: message-service
+          uri: http://message-service:8082
+          predicates:
+            - Path=/api/v1/messages/**
+
+        - id: chat-service-websocket
+          uri: http://chat-service:8083
+          predicates:
+            - Path=/chat/**
+
+        - id: chat-service-rest
+          uri: http://chat-service:8083
+          predicates:
+            - Path=/api/v1/chat/**
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG

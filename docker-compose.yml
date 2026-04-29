@@ -1,0 +1,78 @@
+version: "3.9"
+
+services:
+
+  mongodb:
+    image: mongo:7
+    container_name: chatapp-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - chatapp-net
+
+  room-service:
+    build:
+      context: ./room-service
+      dockerfile: Dockerfile
+    container_name: room-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/chatapp
+    depends_on:
+      - mongodb
+    networks:
+      - chatapp-net
+
+  message-service:
+    build:
+      context: ./message-service
+      dockerfile: Dockerfile
+    container_name: message-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://mongodb:27017/chatapp
+    depends_on:
+      - mongodb
+    networks:
+      - chatapp-net
+
+  chat-service:
+    build:
+      context: ./chat-service
+      dockerfile: Dockerfile
+    container_name: chat-service
+    ports:
+      - "8083:8083"
+    environment:
+      SERVICES_ROOM-SERVICE_URL: http://room-service:8081
+      SERVICES_MESSAGE-SERVICE_URL: http://message-service:8082
+    depends_on:
+      - room-service
+      - message-service
+    networks:
+      - chatapp-net
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - room-service
+      - message-service
+      - chat-service
+    networks:
+      - chatapp-net
+
+volumes:
+  mongo_data:
+
+networks:
+  chatapp-net:
+    driver: bridge
